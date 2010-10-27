@@ -6,7 +6,6 @@ app = Flask(__name__)
 app.config.from_object('shopcop.config')
 app.config.from_envvar('SHOPCOP_CONFIG', silent=True)
 
-print app.config
 
 def connect_db():
   "Returns a new connection to the database."

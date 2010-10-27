@@ -1,12 +1,16 @@
 import os
 import os.path
+import datetime
+import pprint
+import time
 
 from shopcop import app
 import flask
 from flask import Flask, g, request, redirect, url_for, send_file
 import gridfs
 import pymongo.objectid
-
+import Image as PILImage
+import ImageOps as PILImageOps
 
 
 def allowed_file(filename):
@@ -19,8 +23,14 @@ def upload_file():
         # Receive an uploaded file.
         file = request.files['file']
         if file and allowed_file(file.filename):
-            oid = put_image_in_store(file)
-            return redirect(url_for('imgstore', oid=oid))
+            img_oid = put_image_in_store(file)
+            suspect = {'image': img_oid,
+                       'filename': file.filename,
+                       'uploaded_at': datetime.datetime.utcnow(),
+                       'uploaded_by': request.environ['REMOTE_ADDR'],
+                       'thumbnails': create_thumbnails(img_oid)}
+            oid = g.db.suspect_images.insert(suspect)
+            return redirect(url_for('image', oid=oid))
     return '''
     <!doctype html>
     <title>Upload new File</title>
@@ -31,12 +41,25 @@ def upload_file():
     </form>
     '''
 
+def create_thumbnails(img_oid):
+    thumbnails = {}
+    for size in app.config['IMAGE_SIZES']:
+        d = {}
+        dimensions = app.config['IMAGE_SIZES'][size]
+        oid, dimensions = resize_image(img_oid, dimensions)
+        d = {'oid': oid,
+             'size': size,
+             'dimensions': dimensions}
+        thumbnails[size] = d
+    return thumbnails
+    
+
 @app.route('/image/<oid>')
 def image(oid):
-    img = db.suspect_images.find_one({'_id': pymongo.objectid.ObjectId(oid)})
-    if not img:
+    suspect = g.db.suspect_images.find_one({'_id': pymongo.objectid.ObjectId(oid)})
+    if not suspect:
         flask.abort(404)
-    flask.render_template('image.html', image=img)
+    return flask.render_template('image.html', suspect=suspect)
 
 
 @app.route('/imgstore/<oid>')
@@ -55,9 +78,16 @@ def imgstore(oid):
 def put_image_in_store(img_src):
     "Stores an image in the GridFS store."
     fs = gridfs.GridFS(g.db, 'fs_images')
-    gfile = fs.new_file(filename=img_src.filename, content_type=img_src.content_type)
+    content_type = 'JPEG'
+    if hasattr(img_src, 'content_type'):
+        content_type = img_src.content_type
+    gfile = fs.new_file(filename=img_src.filename, content_type=content_type)
     try:
-        img_src.save(gfile)
+        if isinstance(img_src, PILImage.Image):
+            img_src = img_src.convert('RGB')
+            img_src.save(gfile, 'JPEG')
+        else:
+            img_src.save(gfile)
     finally:
         gfile.close()
     return gfile._id
@@ -71,3 +101,10 @@ def get_image_from_store(oid):
     return gfile
 
 
+def resize_image(oid, size):
+    image = get_image_from_store(oid)
+    pil_image = PILImage.open(image)
+    print '*** Resizing to %s' % (size,)
+    pil_image.thumbnail(size, PILImage.ANTIALIAS)
+    print '      Resized to %s' % (pil_image.size,)
+    return put_image_in_store(pil_image), pil_image.size
