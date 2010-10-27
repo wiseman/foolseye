@@ -18,14 +18,12 @@ def connect_db():
 @app.before_request
 def before_request():
   "Get a connection to the database for each request."
-  print "before request."
   g.db_connection, g.db = connect_db()
 
 
 @app.after_request
 def after_request(response):
   "Closes the database connection at the end of the request."
-  print "after request."
   g.db_connection.end_request()
   return response
 
