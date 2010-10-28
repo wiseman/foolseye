@@ -23,7 +23,7 @@ def upload_file():
         # Receive an uploaded file.
         file = request.files['file']
         if file and allowed_file(file.filename):
-            img_oid = put_image_in_store(file)
+            img_oid = put_image_in_store(file, file.filename)
             suspect = {'image': img_oid,
                        'filename': file.filename,
                        'uploaded_at': datetime.datetime.utcnow(),
@@ -42,6 +42,7 @@ def upload_file():
     '''
 
 def create_thumbnails(img_oid):
+    start = time.time()
     thumbnails = {}
     for size in app.config['IMAGE_SIZES']:
         d = {}
@@ -51,8 +52,16 @@ def create_thumbnails(img_oid):
              'size': size,
              'dimensions': dimensions}
         thumbnails[size] = d
+    end = time.time()
+    print 'Created thumbnails in %s seconds' % (end - start, )
     return thumbnails
     
+
+@app.route('/images')
+def images():
+    g.db.suspect_images.create_index('uploaded_at')
+    suspects = g.db.suspect_images.find(sort=[('uploaded_at', pymongo.DESCENDING)]).limit(10)
+    return flask.render_template('images.html', suspects=suspects)
 
 @app.route('/image/<oid>')
 def image(oid):
@@ -75,13 +84,13 @@ def imgstore(oid):
     return send_file(gfile, mimetype=gfile.content_type, add_etags=False)
     
 
-def put_image_in_store(img_src):
+def put_image_in_store(img_src, filename):
     "Stores an image in the GridFS store."
     fs = gridfs.GridFS(g.db, 'fs_images')
     content_type = 'JPEG'
     if hasattr(img_src, 'content_type'):
         content_type = img_src.content_type
-    gfile = fs.new_file(filename=img_src.filename, content_type=content_type)
+    gfile = fs.new_file(filename=filename, content_type=content_type)
     try:
         if isinstance(img_src, PILImage.Image):
             img_src = img_src.convert('RGB')
@@ -101,10 +110,18 @@ def get_image_from_store(oid):
     return gfile
 
 
-def resize_image(oid, size):
+def resize_image(oid, size_spec):
+    square = False
+    size = size_spec
+    if isinstance(size_spec, dict):
+        if 'square' in size_spec:
+            square = size_spec['square']
+        size = size_spec['size']
+    
     image = get_image_from_store(oid)
     pil_image = PILImage.open(image)
-    print '*** Resizing to %s' % (size,)
-    pil_image.thumbnail(size, PILImage.ANTIALIAS)
-    print '      Resized to %s' % (pil_image.size,)
-    return put_image_in_store(pil_image), pil_image.size
+    if square:
+        pil_image = PILImageOps.fit(pil_image, size, PILImage.ANTIALIAS)
+    else:
+        pil_image.thumbnail(size, PILImage.ANTIALIAS)
+    return put_image_in_store(pil_image, image.filename), pil_image.size

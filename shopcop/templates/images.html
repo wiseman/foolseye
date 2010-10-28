@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+<head>
+<title></title>
+</head>
+<body>
+
+{% for suspect in suspects %}
+<p>
+<a href="{{ url_for('image', oid=suspect._id) }}">
+<img src="{{ url_for('imgstore', oid=suspect.thumbnails['small'].oid) }}">
+</a>
+</p>
+{% endfor %}
+
+</body>
+</html>

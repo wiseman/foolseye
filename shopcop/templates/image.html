@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head>
+<title></title>
+</head>
+<body>
+
+<h1>{{ suspect.filename }}</h1>
+
+<p>Uploaded by {{ suspect.uploaded_by }} at {{ suspect.uploaded_at }}</p>
+
+<p>
+{% for thumb_size in suspect.thumbnails %}
+<a href="{{ url_for('imgstore', oid=suspect.thumbnails[thumb_size].oid) }}">{{ suspect.thumbnails[thumb_size].size }}</a> ({{ suspect.thumbnails[thumb_size].dimensions[0] }}x{{ suspect.thumbnails[thumb_size].dimensions[1] }})
+{% endfor %}
+</p>
+
+<img src="{{ url_for('imgstore', oid=suspect.thumbnails.medium500.oid) }}">
+
+</body>
+</html>
