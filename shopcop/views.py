@@ -4,20 +4,29 @@ import datetime
 import pprint
 import time
 
+
 from shopcop import app
+import shopcop.tests
+
 import flask
 from flask import Flask, g, request, redirect, url_for, send_file
 import gridfs
 import pymongo.objectid
 import Image as PILImage
 import ImageOps as PILImageOps
+import flask.signals
+
+
+
+shopcop_signals = flask.signals.Namespace()
+suspect_was_uploaded = shopcop_signals.signal('suspect_was_uploaded')
 
 
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
         # Receive an uploaded file.
@@ -30,6 +39,7 @@ def upload_file():
                        'uploaded_by': request.environ['REMOTE_ADDR'],
                        'thumbnails': create_thumbnails(img_oid)}
             oid = g.db.suspect_images.insert(suspect)
+            suspect_was_uploaded.send(app, suspect_oid=oid, image_oid=img_oid)
             return redirect(url_for('image', oid=oid))
     return '''
     <!doctype html>
@@ -57,7 +67,7 @@ def create_thumbnails(img_oid):
     return thumbnails
     
 
-@app.route('/images')
+@app.route('/')
 def images():
     g.db.suspect_images.create_index('uploaded_at')
     suspects = g.db.suspect_images.find(sort=[('uploaded_at', pymongo.DESCENDING)]).limit(10)
@@ -102,9 +112,11 @@ def put_image_in_store(img_src, filename):
     return gfile._id
 
 
-def get_image_from_store(oid):
+def get_image_from_store(oid, database=None):
     "Retrieves an image from the GridFS store."
-    fs = gridfs.GridFS(g.db, 'fs_images')
+    if database is None:
+        database = g.db
+    fs = gridfs.GridFS(database, 'fs_images')
     oid = pymongo.objectid.ObjectId(oid)
     gfile = fs.get(oid)
     return gfile
@@ -125,3 +137,37 @@ def resize_image(oid, size_spec):
     else:
         pil_image.thumbnail(size, PILImage.ANTIALIAS)
     return put_image_in_store(pil_image, image.filename), pil_image.size
+
+
+def write_img_to_temp_file(img_oid):
+    img_reader = get_image_from_store(img_oid)
+    with img_reader:
+        tmp_file = tempfile.NamedTemporaryFile(delete=False)
+        with tmp_file:
+            tmp_file.write(img_reader.read())
+        return tmp_file.name
+            
+
+def copymove(img_oid):
+    CM_QUALITY = 2
+    CM_THRESHOLD = 3
+    # Write the image out to a temp file.
+    tmp_path = write_img_to_temp_file(img_oid)
+    try:
+        status = subprocess.call(['copymove', tmp_path, str(CM_QUALITY), str(CM_THRESHOLD)])
+        print status
+    finally:
+        os.remove(tmp_path)
+
+
+@suspect_was_uploaded.connect_via(app)
+def when_suspect_uploaded(sender, suspect_oid, image_oid):
+    print '%s: uploaded suspect %s (image %s)' % (sender, suspect_oid, image_oid)
+    print 'tests: %s' % (shopcop.tests.all_tests(),)
+    for test in shopcop.tests.all_tests():
+        shopcop.tests.start_test_task(test, sender, suspect_oid, image_oid)
+
+
+    
+
+
