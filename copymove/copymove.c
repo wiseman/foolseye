@@ -145,8 +145,8 @@ int main( int argc, char * argv[] )
 {
   FreeImage_Initialise(TRUE);
 
-  if ( argc < 2 ) {
-    printf( "Usage: copymove <image file> [<quality>] [<threshold>]\n" );
+  if ( argc < 3 ) {
+    printf( "Usage: copymove <src image file> <dest image file> [<quality>] [<threshold>]\n" );
     return 1;
   }
 
@@ -164,12 +164,12 @@ int main( int argc, char * argv[] )
 
   fclose( handle );
 
-  if ( argc >= 3 ) {
-    quality = atof( argv[2] );
+  if ( argc >= 4 ) {
+    quality = atof( argv[3] );
   }
 
-  if ( argc >= 4 ) {
-    threshold = atoi( argv[3] );
+  if ( argc >= 5 ) {
+    threshold = atoi( argv[4] );
   }
 
   printf( "Set quality factor %f\n", quality );
@@ -486,18 +486,16 @@ int main( int argc, char * argv[] )
 	  }
 	}
 	
-	char output[1000];
-	sprintf( output, "%s-%d=%d.png", argv[1], i, j-h );
+	//char output[1000];
+	//sprintf( output, "%s-%d=%d.png", argv[1], i, j-h );
 	  
-	FreeImage_Save( FIF_PNG, clone, output, PNG_DEFAULT );
+	//FreeImage_Save( FIF_PNG, clone, output, PNG_DEFAULT );
 	FreeImage_Unload( clone );
       }
     }
   }
 
-  char output[1000];
-  sprintf( output, "%s-total.png", argv[1] );
-  FreeImage_Save( FIF_PNG, total, output, PNG_DEFAULT );
+  FreeImage_Save( FIF_JPEG, total, argv[2], PNG_DEFAULT );
   
   FreeImage_Unload( total );
   FreeImage_Unload( color );

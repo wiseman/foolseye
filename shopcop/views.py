@@ -139,27 +139,6 @@ def resize_image(oid, size_spec):
     return put_image_in_store(pil_image, image.filename), pil_image.size
 
 
-def write_img_to_temp_file(img_oid):
-    img_reader = get_image_from_store(img_oid)
-    with img_reader:
-        tmp_file = tempfile.NamedTemporaryFile(delete=False)
-        with tmp_file:
-            tmp_file.write(img_reader.read())
-        return tmp_file.name
-            
-
-def copymove(img_oid):
-    CM_QUALITY = 2
-    CM_THRESHOLD = 3
-    # Write the image out to a temp file.
-    tmp_path = write_img_to_temp_file(img_oid)
-    try:
-        status = subprocess.call(['copymove', tmp_path, str(CM_QUALITY), str(CM_THRESHOLD)])
-        print status
-    finally:
-        os.remove(tmp_path)
-
-
 @suspect_was_uploaded.connect_via(app)
 def when_suspect_uploaded(sender, suspect_oid, image_oid):
     print '%s: uploaded suspect %s (image %s)' % (sender, suspect_oid, image_oid)

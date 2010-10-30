@@ -7,8 +7,10 @@ app.config.from_object('shopcop.config')
 app.config.from_envvar('SHOPCOP_CONFIG', silent=True)
 
 
-def connect_db():
+def connect_db(app=None):
   "Returns a new connection to the database."
+  if app is None:
+    app = shopcop.app
   connection = pymongo.Connection(app.config['DATABASE_CONNECTION'])
   db = connection[app.config['DATABASE_NAME']]
   return connection, db
