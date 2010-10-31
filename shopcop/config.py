@@ -18,3 +18,5 @@ IMAGE_SIZES = {'square': {'size': (75, 75), 'square': True},
                'large': (1024, 1024)}
 
                
+TASK_QUEUE_DIR = os.path.join(os.path.dirname(__file__), 'taskqueue')
+

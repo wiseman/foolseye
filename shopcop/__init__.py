@@ -30,3 +30,6 @@ def after_request(response):
 
 
 import shopcop.views
+import shopcop.tasks
+
+shopcop.tasks.g_default_queue = shopcop.tasks.TaskQueue(dir=app.config['TASK_QUEUE_DIR'])
