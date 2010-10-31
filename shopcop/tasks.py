@@ -30,7 +30,6 @@ class TaskQueue(object):
         with open(data_path, 'rb') as f:
             data = json.load(f)
             self.queue = [Task.from_dict(d) for d in data]
-        self.ensure_runner()
         
     def save_to_file(self):
         task_dicts = [t.to_dict() for t in self.queue]
@@ -43,7 +42,6 @@ class TaskQueue(object):
             print 'Added task %s to queue %s.' % (task, self)
             self.save_to_file()
             self.condvar.notifyAll()
-        self.ensure_runner()
 
     def process_task(self):
         with self.condvar:
@@ -76,6 +74,9 @@ class TaskQueue(object):
             self.runner = threading.Thread(target=self.thread_run_fn)
             self.runner.daemon = True
             self.runner.start()
+
+    def start(self):
+        self.ensure_runner()
 
     def thread_run_fn(self):
         while True:
@@ -144,10 +145,3 @@ class Task(object):
         return self.execution_records[-1]['status']
     
     
-g_default_queue = None
-
-
-def add_task(**kwargs):
-    global g_default_queue
-    task = apply(Task, [], kwargs)
-    g_default_queue.add_task(task)

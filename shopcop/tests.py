@@ -17,7 +17,6 @@ from shopcop import app
 g_tests = {}
 
 def register_test(app, name, function):
-    print 'Registering test %s/%s' % (name, function)
     g_tests[name] = function
     app.add_url_rule('/_tsk/%s' % (name,), None, function)
 
@@ -45,10 +44,11 @@ class register(object):
 def start_test_task(test, app, suspect_oid, image_oid):
     print 'test=%s' % (`test`,)
     record_test_result(suspect_oid, test, 'queued')
-    shopcop.tasks.add_task(url='http://localhost:5000/_tsk/%s' % (test,),
-                           params={'suspect_oid': str(suspect_oid),
-                                   'image_oid': str(image_oid)},
-                           method='GET')
+    task = shopcop.tasks.Task(url='http://localhost:5000/_tsk/%s' % (test,),
+                              params={'suspect_oid': str(suspect_oid),
+                                      'image_oid': str(image_oid)},
+                              method='GET')
+    app.taskqueue.add_task(task)
 
 
 def write_image_to_file(img_oid, path, database):
@@ -117,8 +117,6 @@ def record_test_result(suspect_oid, test_name, status, result_img=None):
         result['image'] = result_img_id
         result['thumbnails'] = shopcop.views.create_thumbnails(result_img_id)
     suspect = g.db.suspect_images.find_one({'_id': pymongo.objectid.ObjectId(suspect_oid)})
-    import pprint
-    pprint.pprint(suspect)
     suspect['tests'][test_name] = result
     g.db.suspect_images.save(suspect)
         

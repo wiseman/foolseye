@@ -2,7 +2,18 @@ from flask import Flask, g
 import pymongo
 
 
-app = Flask(__name__)
+class ShopcopApp(Flask):
+  def __init__(self, import_name, static_path=None):
+    Flask.__init__(self, import_name, static_path=static_path)
+    self.taskqueue = None
+    
+  def run(self, host='127.0.0.1', port=5000, **options):
+    if self.taskqueue is None:
+      self.taskqueue = shopcop.tasks.TaskQueue(dir=app.config['TASK_QUEUE_DIR'])
+    self.taskqueue.start()
+    return Flask.run(self, host=host, port=port, **options)
+
+app = ShopcopApp(__name__)
 app.config.from_object('shopcop.config')
 app.config.from_envvar('SHOPCOP_CONFIG', silent=True)
 
@@ -31,5 +42,3 @@ def after_request(response):
 
 import shopcop.views
 import shopcop.tasks
-
-shopcop.tasks.g_default_queue = shopcop.tasks.TaskQueue(dir=app.config['TASK_QUEUE_DIR'])
