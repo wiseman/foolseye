@@ -24,10 +24,10 @@ class TaskQueue(object):
         self.data_path = os.path.join(self.dir, 'queue.dat')
         
         if os.path.exists(self.data_path):
-            self.load_from_file(self.data_path)
+            self.load_from_file()
 
-    def load_from_file(self, data_path):
-        with open(data_path, 'rb') as f:
+    def load_from_file(self):
+        with open(self.data_path, 'rb') as f:
             data = json.load(f)
             self.queue = [Task.from_dict(d) for d in data]
         
@@ -63,7 +63,7 @@ class TaskQueue(object):
                   (task, task.result(), task.num_tries())
 
         with self.condvar:
-            assert self.queue[0] is task
+            self.load_from_file()
             self.queue = self.queue[1:]
             self.save_to_file()
         return task
