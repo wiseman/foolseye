@@ -431,9 +431,11 @@ int main( int argc, char * argv[] )
       
       if ( ( ( i > 16 ) || ( ( abs(j-h) > 16 ) ) ) &&
 	   ( shift[j * w + i] > threshold ) ) {
-	printf( "Shift vector (%d,%d) has count %d\n", i, j - h,
-		shift[j * w + i] );
-
+          printf(".");
+          fflush(0);
+          //printf( "Shift vector (%d,%d) has count %d\n", i, j - h,
+          //shift[j * w + i] );
+          
 	FIBITMAP * clone = FreeImage_Clone( color );
 
 	int sx = i;
