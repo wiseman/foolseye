@@ -94,7 +94,7 @@ def copymove(suspect_oid, image_oid, quality, threshold):
     input_img_path = os.path.join(temp_dir, 'image.jpg')
     output_img_path = os.path.join(temp_dir, 'copymove.png')
     write_image_to_file(image_oid, input_img_path, g.db)
-    args = ['/Users/wiseman/src/shopcop/copymove/copymove', input_img_path, output_img_path,
+    args = ['copymove', input_img_path, output_img_path,
             str(quality), str(threshold)]
     status = subprocess.call(args)
     print 'status=%s, path=%s' % (status, output_img_path)
