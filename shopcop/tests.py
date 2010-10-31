@@ -60,15 +60,15 @@ def write_image_to_file(img_oid, path, database):
 
 
 
-@register(app)
-@app.route('/_tsk/dummy_test')
-def dummy_test():
-    suspect_oid = request.args['suspect_oid']
-    sleep_time = random.randint(5, 15)
-    print 'Task %s running for %s seconds.' % (suspect_oid, sleep_time,)
-    time.sleep(sleep_time)
-    print 'Task %s done.' % (suspect_oid,)
-    return ''
+#@register(app)
+#@app.route('/_tsk/dummy_test')
+#def dummy_test():
+#    suspect_oid = request.args['suspect_oid']
+#    sleep_time = random.randint(5, 15)
+#    print 'Task %s running for %s seconds.' % (suspect_oid, sleep_time,)
+#    time.sleep(sleep_time)
+#    print 'Task %s done.' % (suspect_oid,)
+#    return ''
 
 
 @register(app)
@@ -79,6 +79,14 @@ def copymove_5_7():
     image_oid = pymongo.objectid.ObjectId(request.args['image_oid'])
     return copymove(suspect_oid, image_oid, quality=5, threshold=7)
 
+
+@register(app)
+@app.route('/_tsk/copymove_3_7')
+def copymove_3_7():
+    g.test_name = 'copymove_3_7'
+    suspect_oid = pymongo.objectid.ObjectId(request.args['suspect_oid'])
+    image_oid = pymongo.objectid.ObjectId(request.args['image_oid'])
+    return copymove(suspect_oid, image_oid, quality=3, threshold=7)
 
 def copymove(suspect_oid, image_oid, quality, threshold):
     record_test_result(suspect_oid, g.test_name, 'running')

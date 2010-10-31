@@ -38,7 +38,8 @@ def upload_file():
                        'uploaded_at': datetime.datetime.utcnow(),
                        'uploaded_by': request.environ['REMOTE_ADDR'],
                        'thumbnails': create_thumbnails(img_oid),
-                       'tests': {}}
+                       'tests': {},
+                       'comments': []}
             oid = g.db.suspect_images.insert(suspect)
             suspect_was_uploaded.send(app, suspect_oid=oid, image_oid=img_oid)
             return redirect(url_for('image', oid=oid))
