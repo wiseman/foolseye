@@ -9,6 +9,7 @@ from flask import request, g
 import pymongo
 
 import shopcop
+import shopcop.views
 import shopcop.tasks
 from shopcop import app
 
@@ -43,6 +44,7 @@ class register(object):
 
 def start_test_task(test, app, suspect_oid, image_oid):
     print 'test=%s' % (`test`,)
+    record_test_result(suspect_oid, test, 'queued')
     shopcop.tasks.add_task(url='http://localhost:5000/_tsk/%s' % (test,),
                            params={'suspect_oid': str(suspect_oid),
                                    'image_oid': str(image_oid)},
@@ -68,22 +70,47 @@ def dummy_test():
     print 'Task %s done.' % (suspect_oid,)
     return ''
 
+
 @register(app)
 @app.route('/_tsk/copymove_5_7')
 def copymove_5_7():
+    g.test_name = 'copymove_5_7'
     suspect_oid = pymongo.objectid.ObjectId(request.args['suspect_oid'])
     image_oid = pymongo.objectid.ObjectId(request.args['image_oid'])
-    return copymove(app, g.db, suspect_oid, image_oid, quality=5, threshold=7)
+    return copymove(suspect_oid, image_oid, quality=5, threshold=7)
 
-def copymove(app, db, suspect_oid, image_oid, quality, threshold):
+
+def copymove(suspect_oid, image_oid, quality, threshold):
+    record_test_result(suspect_oid, g.test_name, 'running')
     temp_dir = tempfile.mkdtemp()
     input_img_path = os.path.join(temp_dir, 'image.jpg')
     output_img_path = os.path.join(temp_dir, 'copymove.png')
-    write_image_to_file(image_oid, input_img_path, db)
+    write_image_to_file(image_oid, input_img_path, g.db)
     args = ['/Users/wiseman/src/shopcop/copymove/copymove', input_img_path, output_img_path,
             str(quality), str(threshold)]
-    print args
     status = subprocess.call(args)
+    print 'status=%s, path=%s' % (status, output_img_path)
     if status != 0:
         abort(500)
+    with open(output_img_path, 'rb') as img_reader:
+        class ImgSaver(object):
+            def save(self, gfile):
+                gfile.write(img_reader.read())
+        record_test_result(suspect_oid, g.test_name, 'finished', ImgSaver())
     return ''
+
+
+def record_test_result(suspect_oid, test_name, status, result_img=None):
+    result = {'name': test_name,
+              'status': status}
+    if result_img:
+        print '!!! saving result image'
+        result_img_id = shopcop.views.put_image_in_store(result_img, test_name)
+        result['image'] = result_img_id
+        result['thumbnails'] = shopcop.views.create_thumbnails(result_img_id)
+    suspect = g.db.suspect_images.find_one({'_id': pymongo.objectid.ObjectId(suspect_oid)})
+    import pprint
+    pprint.pprint(suspect)
+    suspect['tests'][test_name] = result
+    g.db.suspect_images.save(suspect)
+        

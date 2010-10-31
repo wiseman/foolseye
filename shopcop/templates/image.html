@@ -9,13 +9,31 @@
 
 <p>Uploaded by {{ suspect.uploaded_by }} at {{ suspect.uploaded_at }}</p>
 
-<p>
+<table>
+<tr><td>original</td><td><a href="{{ url_for('imgstore', oid=suspect.image) }}"><img src="{{ url_for('imgstore', oid=suspect.thumbnails['medium500']['oid']) }}"></a></td></tr>
+
+
+{% for test in suspect.tests %}
+<tr><td>{{ test }}</td><td>
+{% if suspect.tests[test].image %}
+  <a href="{{ url_for('imgstore', oid=suspect.tests[test].image) }}">
+  <img src="{{ url_for('imgstore', oid=suspect.tests[test].thumbnails['small']['oid']) }}"
+  </a>
+{% else %}
+  status: {{ suspect.tests[test].status }}
+{% endif %}
+</td></tr>
+{% endfor %}
+
+</table>
+
+<!-- 
 {% for thumb_size in suspect.thumbnails %}
 <a href="{{ url_for('imgstore', oid=suspect.thumbnails[thumb_size].oid) }}">{{ suspect.thumbnails[thumb_size].size }}</a> ({{ suspect.thumbnails[thumb_size].dimensions[0] }}x{{ suspect.thumbnails[thumb_size].dimensions[1] }})
 {% endfor %}
-</p>
 
 <img src="{{ url_for('imgstore', oid=suspect.thumbnails.medium500.oid) }}">
+-->
 
 </body>
 </html>
