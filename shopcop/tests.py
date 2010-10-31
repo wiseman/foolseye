@@ -84,4 +84,6 @@ def copymove(app, db, suspect_oid, image_oid, quality, threshold):
             str(quality), str(threshold)]
     print args
     status = subprocess.call(args)
+    if status != 0:
+        abort(500)
     return ''

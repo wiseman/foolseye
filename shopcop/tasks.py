@@ -11,21 +11,13 @@ import json
 from shopcop import app
 
 
-
-
-RUNNING = 'RUNNING'
-STOPPED = 'STOPPED'
-FINISHED = 'FINISHED'
-
-
 class TaskQueue(object):
     def __init__(self, dir, max_retries=3):
-        self.queue = Queue.PriorityQueue()
+        self.dir = dir
         self.max_retries = max_retries
+        self.queue = []
         self.runner = None
         self.condvar = threading.Condition()
-        self.dir = dir
-        self.delay_runner = False
         
         if not os.path.exists(self.dir):
             os.makedirs(self.dir)
@@ -35,41 +27,30 @@ class TaskQueue(object):
             self.load_from_file(self.data_path)
 
     def load_from_file(self, data_path):
-        with self.condvar:
-            self.delay_runner = True
-            self.queue = Queue.PriorityQueue()
-            with open(data_path, 'rb') as f:
-                tasks = json.load(f)
-                for task_dict in tasks:
-                    d = {}
-                    for k in task_dict: d[str(k)] = task_dict[k]
-                    self._add_task(apply(Task, [], d))
-            self.delay_runner = False
-            self.start_runner()
-
+        with open(data_path, 'rb') as f:
+            data = json.load(f)
+            self.queue = [Task.from_dict(d) for d in data]
+        self.ensure_runner()
+        
     def save_to_file(self):
-        task_dicts = []
-        while not self.queue.empty():
-            priority, task = self.queue.get()
-            task_dicts += [task.to_dict()]
+        task_dicts = [t.to_dict() for t in self.queue]
         with open(self.data_path, 'wb') as f:
             json.dump(task_dicts, f, ensure_ascii=True)
 
     def add_task(self, task):
         with self.condvar:
-            self._add_task(task)
+            self.queue = self.queue + [task]
+            print 'Added task %s to queue %s.' % (task, self)
             self.save_to_file()
-
-    def _add_task(self, task):
-        self.queue.put((task.priority, task))
-        print 'Added task %s to queue %s.' % (task, self)
-        if (not self.delay_runner) and (not self.runner):
-            self.start_runner()
-        
+            self.condvar.notifyAll()
+        self.ensure_runner()
 
     def process_task(self):
-        priority, task = self.queue.get()
-        print 'Processing task %s pri=%s in queue %s' % (task, priority, self)
+        with self.condvar:
+            while len(self.queue) == 0:
+                self.condvar.wait()
+            task = self.queue[0]
+        print 'Processing task %s in queue %s' % (task, self)
         task.run()
         if not task.succeeded():
             if task.num_tries() <= self.max_retries:
@@ -82,14 +63,19 @@ class TaskQueue(object):
         else:
             print 'Task %s succeeded with result=%s, numtries=%s.' % \
                   (task, task.result(), task.num_tries())
+
         with self.condvar:
+            assert self.queue[0] is task
+            self.queue = self.queue[1:]
             self.save_to_file()
         return task
 
-    def start_runner(self):
-        print 'Starting runner for queue %s' % (self,)
-        self.runner = threading.Thread(target=self.thread_run_fn)
-        self.runner.start()
+    def ensure_runner(self):
+        if self.runner is None:
+            print 'Starting runner for queue %s' % (self,)
+            self.runner = threading.Thread(target=self.thread_run_fn)
+            self.runner.daemon = True
+            self.runner.start()
 
     def thread_run_fn(self):
         while True:
@@ -112,6 +98,12 @@ class Task(object):
         for a in ['payload', 'method', 'name', 'params', 'url', 'priority', 'execution_records']:
             d[a] = getattr(self, a)
         return d
+
+    @staticmethod
+    def from_dict(d):
+        dict = {}
+        for k in d: dict[str(k)] = d[k]
+        return apply(Task, [], dict)
 
     def __str__(self):
         if self.params:
