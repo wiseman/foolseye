@@ -49,18 +49,20 @@ class TaskQueue(object):
                 self.condvar.wait()
             task = self.queue[0]
         print 'Processing task %s in queue %s' % (task, self)
+        start_time = time.time()
         task.run()
+        duration = time.time() - start_time
         if not task.succeeded():
             if task.num_tries() <= self.max_retries:
-                print 'Task %s failed with result=%s, numtries=%s; Re-qeueing.' % \
-                      (task, task.result(), task.num_tries())
+                print 'Task %s failed with result=%s in %s s, numtries=%s; Re-qeueing.' % \
+                      (task, task.result(), duration, task.num_tries())
                 self.add_task(task)
             else:
-                print 'Task %s failed with result=%s, numtries=%s; GIVING UP.' % \
-                      (task, task.result(), task.num_tries())
+                print 'Task %s failed with result=%s in %s s, numtries=%s; GIVING UP.' % \
+                      (task, task.result(), duration, task.num_tries())
         else:
-            print 'Task %s succeeded with result=%s, numtries=%s.' % \
-                  (task, task.result(), task.num_tries())
+            print 'Task %s succeeded with result=%s in %s s, numtries=%s.' % \
+                  (task, task.result(), duration, task.num_tries())
 
         with self.condvar:
             self.load_from_file()

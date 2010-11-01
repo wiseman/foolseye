@@ -72,6 +72,14 @@ def write_image_to_file(img_oid, path, database):
 
 
 @register(app)
+@app.route('/_tsk/copymove_3_7')
+def copymove_3_7():
+    g.test_name = 'copymove_3_7'
+    suspect_oid = pymongo.objectid.ObjectId(request.args['suspect_oid'])
+    image_oid = pymongo.objectid.ObjectId(request.args['image_oid'])
+    return copymove(suspect_oid, image_oid, quality=3, threshold=7)
+
+@register(app)
 @app.route('/_tsk/copymove_5_7')
 def copymove_5_7():
     g.test_name = 'copymove_5_7'
@@ -79,14 +87,22 @@ def copymove_5_7():
     image_oid = pymongo.objectid.ObjectId(request.args['image_oid'])
     return copymove(suspect_oid, image_oid, quality=5, threshold=7)
 
-
 @register(app)
-@app.route('/_tsk/copymove_3_7')
-def copymove_3_7():
-    g.test_name = 'copymove_3_7'
+@app.route('/_tsk/copymove_3_10')
+def copymove_3_10():
+    g.test_name = 'copymove_3_10'
     suspect_oid = pymongo.objectid.ObjectId(request.args['suspect_oid'])
     image_oid = pymongo.objectid.ObjectId(request.args['image_oid'])
-    return copymove(suspect_oid, image_oid, quality=3, threshold=7)
+    return copymove(suspect_oid, image_oid, quality=3, threshold=10)
+
+@register(app)
+@app.route('/_tsk/copymove_5_10')
+def copymove_5_10():
+    g.test_name = 'copymove_5_10'
+    suspect_oid = pymongo.objectid.ObjectId(request.args['suspect_oid'])
+    image_oid = pymongo.objectid.ObjectId(request.args['image_oid'])
+    return copymove(suspect_oid, image_oid, quality=5, threshold=10)
+
 
 def copymove(suspect_oid, image_oid, quality, threshold):
     record_test_result(suspect_oid, g.test_name, 'running')
