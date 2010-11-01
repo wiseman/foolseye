@@ -152,3 +152,14 @@ def when_suspect_uploaded(sender, suspect_oid, image_oid):
     
 
 
+
+@app.route('/new_comment', methods=['POST'])
+def new_comment():
+    comment = {'author': request.environ['REMOTE_ADDR'],
+               'posted_at': datetime.datetime.utcnow(),
+               'text': request.form['text']}
+    suspect_oid = pymongo.objectid.ObjectId(request.form['suspect_oid'])
+    suspect = g.db.suspect_images.find_one({'_id': suspect_oid})
+    suspect['comments'] += [comment]
+    g.db.suspect_images.save(suspect)
+    return redirect(url_for('image', oid=suspect_oid))

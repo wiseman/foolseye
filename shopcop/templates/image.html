@@ -27,13 +27,25 @@
 
 </table>
 
-<!-- 
-{% for thumb_size in suspect.thumbnails %}
-<a href="{{ url_for('imgstore', oid=suspect.thumbnails[thumb_size].oid) }}">{{ suspect.thumbnails[thumb_size].size }}</a> ({{ suspect.thumbnails[thumb_size].dimensions[0] }}x{{ suspect.thumbnails[thumb_size].dimensions[1] }})
-{% endfor %}
+<div class="comments">
+  {% for comment in suspect.comments %}
+<div class="comment">
+<div class="attribution">
+  <span class="author">{{ comment['author'] }}</span>
+  <span class="timestamp">{{ comment['posted_at'] }}</span>
+</div>
+<div class="post">{{ comment['text'] }}</div>
+</div>
+  {% endfor %}
+</div>
 
-<img src="{{ url_for('imgstore', oid=suspect.thumbnails.medium500.oid) }}">
--->
+
+<form action="{{ url_for('new_comment') }}" method="post">
+<textarea name="text" rows="10" cols="40">
+</textarea>
+<input type="hidden" name="suspect_oid" value="{{ suspect._id }}">
+<input type="submit">
+</form>
 
 </body>
 </html>
