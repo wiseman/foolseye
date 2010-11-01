@@ -15,10 +15,9 @@ UPLOAD_URL = 'http://localhost:5000/upload'
 
 @manager.command
 def upload_image(path):
-  args = ['curl',
-          '-F', 'file=@%s' % (path,), UPLOAD_URL]
-  status = subprocess.call(args)
-  return status
+    args = ['curl',
+            '-F', 'file=@%s' % (path,), UPLOAD_URL]
+    status = subprocess.call(args)
 
 
 
