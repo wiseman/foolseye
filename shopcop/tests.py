@@ -143,9 +143,9 @@ def record_test_result(suspect_oid, test_name, status, result_img=None):
 
 
 @register(app)
-@app.route('/_tsk/ela')
+@app.route('/_tsk/errorlevelanalysis')
 def ela():
-    g.test_name = 'error level analysis'
+    g.test_name = 'errorlevelanalysis'
     suspect_oid = pymongo.objectid.ObjectId(request.args['suspect_oid'])
     image_oid = pymongo.objectid.ObjectId(request.args['image_oid'])
     return error_level_analysis(suspect_oid, image_oid, enhance_factor=40)
