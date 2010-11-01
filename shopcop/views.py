@@ -102,7 +102,7 @@ def newest():
 
 
 def get_page_of_results(collection, sort, skip, limit):
-    cursor = collection.find(sort=sort)..skip(skip).limit(limit + 1)
+    cursor = collection.find(sort=sort).skip(skip).limit(limit + 1)
     results = list(cursor)
     has_prev_results = skip > 0
     has_next_results = len(results) > limit
