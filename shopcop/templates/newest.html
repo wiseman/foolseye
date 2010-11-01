@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 <head>
-<title></title>
+<title>Foolseye: New images</title>
 </head>
 <body>
 
@@ -10,12 +10,28 @@
 </p>
 
 {% for suspect in suspects %}
-<p>
-<a href="{{ url_for('image', oid=suspect._id) }}">
-<img src="{{ url_for('imgstore', oid=suspect.thumbnails['small'].oid) }}">
-</a>
-</p>
+<div class="suspect">
+  <h2><a href="{{ url_for('image', oid=suspect._id) }}">{{ suspect.filename }}</a></h2>
+  <p>
+  <a href="{{ url_for('image', oid=suspect._id) }}">
+  <img src="{{ url_for('imgstore', oid=suspect.thumbnails['small'].oid) }}">
+  </a>
+  <br>
+  {{ suspect.uploaded_at|timestamp }}
+  <br>
+  {{ suspect.comments|length }} comments
+  </p>
+</div>
 {% endfor %}
+
+<div class="connective">
+  {% if prev_skip %}
+  <a href="{{ url_for('newest', skip=prev_skip) }}">newer</a>   
+  {% endif %}
+  {% if next_skip %}
+  <a href="{{ url_for('newest', skip=next_skip) }}">older</a>
+  {% endif %}
+</div>
 
 </body>
 </html>

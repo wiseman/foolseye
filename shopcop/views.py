@@ -69,11 +69,45 @@ def create_thumbnails(img_oid):
     return thumbnails
     
 
+@app.route('/')
+def index():
+    return redirect(url_for('newest'))
+
+
 @app.route('/newest')
 def newest():
+    page_size = 10
+    skip = 0
+    if 'skip' in request.args:
+        print 'setting skip=%s' % (request.args['skip'],)
+        skip = int(request.args['skip'])
     g.db.suspect_images.create_index('uploaded_at')
-    suspects = g.db.suspect_images.find(sort=[('uploaded_at', pymongo.DESCENDING)]).limit(10)
-    return flask.render_template('newest.html', suspects=suspects)
+    suspects, has_prev, has_next = \
+              get_page_of_results(g.db.suspect_images,
+                                  sort=[('uploaded_at', pymongo.DESCENDING)],
+                                  skip=skip,
+                                  limit=page_size)
+    prev_skip = None
+    if has_prev:
+        prev_skip = skip - page_size
+    if prev_skip <= 0:
+        prev_skip = None
+
+    next_skip = None
+    if has_next:
+        next_skip = skip + page_size
+
+    return flask.render_template('newest.html',
+                                 suspects=suspects, prev_skip=prev_skip, next_skip=next_skip)
+
+
+def get_page_of_results(collection, sort, skip, limit):
+    cursor = collection.find(sort=sort).limit(limit + 1)
+    results = list(cursor)
+    has_prev_results = skip > 0
+    has_next_results = len(results) > limit
+    return results[0:limit], has_prev_results, has_next_results
+    
 
 @app.route('/image/<oid>')
 def image(oid):
