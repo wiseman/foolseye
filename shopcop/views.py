@@ -87,12 +87,15 @@ def newest():
                                   sort=[('uploaded_at', pymongo.DESCENDING)],
                                   skip=skip,
                                   limit=page_size)
+    print 'has_prev=%s' % (has_prev,)
     prev_skip = None
     if has_prev:
         prev_skip = skip - page_size
-    if prev_skip <= 0:
-        prev_skip = None
+        if prev_skip <= 0:
+            prev_skip = 0
+        prev_skip = str(prev_skip)
 
+    print 'prev_skip=%s' % (prev_skip,)
     next_skip = None
     if has_next:
         next_skip = skip + page_size
