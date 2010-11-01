@@ -8,6 +8,10 @@ import flask
 from flask import request, g
 import pymongo
 
+import Image
+import ImageChops
+import ImageEnhance
+
 import shopcop
 import shopcop.views
 import shopcop.tasks
@@ -135,4 +139,38 @@ def record_test_result(suspect_oid, test_name, status, result_img=None):
     suspect = g.db.suspect_images.find_one({'_id': pymongo.objectid.ObjectId(suspect_oid)})
     suspect['tests'][test_name] = result
     g.db.suspect_images.save(suspect)
-        
+    
+
+
+@register(app)
+@app.route('/_tsk/ela')
+def ela():
+    g.test_name = 'error level analysis'
+    suspect_oid = pymongo.objectid.ObjectId(request.args['suspect_oid'])
+    image_oid = pymongo.objectid.ObjectId(request.args['image_oid'])
+    return error_level_analysis(suspect_oid, image_oid, enhance_factor=40)
+
+
+def error_level_analysis(suspect_oid, image_oid, enhance_factor):
+    record_test_result(suspect_oid, g.test_name, 'running')
+    temp_dir = tempfile.mkdtemp()
+    input_img_path = os.path.join(temp_dir, 'image.jpg')
+    output_img_path = os.path.join(temp_dir, 'ela.jpg')
+    write_image_to_file(image_oid, input_img_path, g.db)
+
+    im = Image.open(input_img_path)
+    im.save(os.path.join(temp_dir, '95.jpg'), quality=95)
+    nf = Image.open(os.path.join(temp_dir, '95.jpg'))
+    ela = ImageChops.difference(im, nf)
+    ela.save(os.path.join(temp_dir, 'ela.jpg'), quality=95)
+    enhancer = ImageEnhance.Brightness(ela)
+    enhanced = enhancer.enhance(enhance_factor)
+    enhanced.save(output_img_path, quality=95)
+
+    with open(output_img_path, 'rb') as img_reader:
+        class ImgSaver(object):
+            def save(self, gfile):
+                gfile.write(img_reader.read())
+        record_test_result(suspect_oid, g.test_name, 'finished', ImgSaver())
+    return ''
+    
