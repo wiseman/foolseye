@@ -69,11 +69,11 @@ def create_thumbnails(img_oid):
     return thumbnails
     
 
-@app.route('/')
-def images():
+@app.route('/newest')
+def newest():
     g.db.suspect_images.create_index('uploaded_at')
     suspects = g.db.suspect_images.find(sort=[('uploaded_at', pymongo.DESCENDING)]).limit(10)
-    return flask.render_template('images.html', suspects=suspects)
+    return flask.render_template('newest.html', suspects=suspects)
 
 @app.route('/image/<oid>')
 def image(oid):
