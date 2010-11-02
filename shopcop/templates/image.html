@@ -13,14 +13,14 @@
 <tr><td>original</td><td><a href="{{ url_for('imgstore', oid=suspect.image) }}"><img src="{{ url_for('imgstore', oid=suspect.thumbnails['medium640']['oid']) }}"></a></td></tr>
 
 
-{% for test in suspect.tests %}
-<tr><td>{{ test }}</td><td>
-{% if suspect.tests[test].image %}
-  <a href="{{ url_for('imgstore', oid=suspect.tests[test].image) }}">
-  <img src="{{ url_for('imgstore', oid=suspect.tests[test].thumbnails['medium500']['oid']) }}"
+{% for name, test in suspect.tests|dictsort %}
+<tr><td>{{ name }}</td><td>
+{% if test.image %}
+  <a href="{{ url_for('imgstore', oid=test.image) }}">
+  <img src="{{ url_for('imgstore', oid=test.thumbnails['medium500']['oid']) }}"
   </a>
 {% else %}
-  status: {{ suspect.tests[test].status }}
+  status: {{ test.status }}
 {% endif %}
 </td></tr>
 {% endfor %}
