@@ -4,6 +4,8 @@ import flaskext.script
 from flaskext.script import Manager
 
 from shopcop import app
+import shopcop
+
 
 manager = Manager(app)
 
@@ -19,6 +21,13 @@ def uploadimage(path):
             '-F', 'file=@%s' % (path,), UPLOAD_URL]
     status = subprocess.call(args)
 
+
+@manager.command
+def wipedb():
+    connection, db = shopcop.connect_db()
+    connection.drop_database(db)
+    
+    
 
 
 
