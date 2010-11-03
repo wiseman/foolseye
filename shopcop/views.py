@@ -32,7 +32,7 @@ def upload_file():
         # Receive an uploaded file.
         file = request.files['file']
         if file and allowed_file(file.filename):
-            img_oid = put_image_in_store(file, file.filename)
+            img_oid = put_image_in_store(g.db, file, file.filename)
             suspect = {'image': img_oid,
                        'filename': file.filename,
                        'uploaded_at': datetime.datetime.utcnow(),
@@ -125,7 +125,7 @@ def imgstore(oid):
     "Handles image store URLs."
     gfile = None
     try:
-        gfile = get_image_from_store(pymongo.objectid.ObjectId(oid))
+        gfile = get_image_from_store(g.db, pymongo.objectid.ObjectId(oid))
     except pymongo.objectid.InvalidId:
         pass
     if not gfile:
@@ -133,9 +133,9 @@ def imgstore(oid):
     return send_file(gfile, mimetype=gfile.content_type, add_etags=False)
     
 
-def put_image_in_store(img_src, filename):
+def put_image_in_store(db, img_src, filename):
     "Stores an image in the GridFS store."
-    fs = gridfs.GridFS(g.db, 'fs_images')
+    fs = gridfs.GridFS(db, 'fs_images')
     content_type = 'JPEG'
     if hasattr(img_src, 'content_type'):
         content_type = img_src.content_type
@@ -150,12 +150,17 @@ def put_image_in_store(img_src, filename):
         gfile.close()
     return gfile._id
 
+def put_image_file_in_store(db, path, filename):
+    class ImgSaver(object):
+        def save(self, gfile):
+            with open(path, 'rb') as img_reader:
+                gfile.write(img_reader.read())
+    return put_image_in_store(db, ImgSaver(), filename)
 
-def get_image_from_store(oid, database=None):
+
+def get_image_from_store(db, oid):
     "Retrieves an image from the GridFS store."
-    if database is None:
-        database = g.db
-    fs = gridfs.GridFS(database, 'fs_images')
+    fs = gridfs.GridFS(db, 'fs_images')
     oid = pymongo.objectid.ObjectId(oid)
     gfile = fs.get(oid)
     return gfile
@@ -169,13 +174,13 @@ def resize_image(oid, size_spec):
             square = size_spec['square']
         size = size_spec['size']
     
-    image = get_image_from_store(oid)
+    image = get_image_from_store(g.db, oid)
     pil_image = PILImage.open(image)
     if square:
         pil_image = PILImageOps.fit(pil_image, size, PILImage.ANTIALIAS)
     else:
         pil_image.thumbnail(size, PILImage.ANTIALIAS)
-    return put_image_in_store(pil_image, image.filename), pil_image.size
+    return put_image_in_store(g.db, pil_image, image.filename), pil_image.size
 
 
 @suspect_was_uploaded.connect_via(app)
@@ -183,10 +188,7 @@ def when_suspect_uploaded(sender, suspect_oid, image_oid):
     print '%s: uploaded suspect %s (image %s)' % (sender, suspect_oid, image_oid)
     print 'tests: %s' % (shopcop.tests.all_tests(),)
     for test in shopcop.tests.all_tests():
-        shopcop.tests.start_test_task(test, sender, suspect_oid, image_oid)
-
-
-    
+        shopcop.tests.enqueue_test(app, g.db, test, suspect_oid, image_oid)
 
 
 

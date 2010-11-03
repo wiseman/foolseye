@@ -67,6 +67,10 @@ def timestamp(dt, default="just now"):
 
     return default
 
-  
+
 import shopcop.views
 import shopcop.tasks
+
+import shopcop.tests
+import shopcop.errorlevelanalysis
+import shopcop.copymove
