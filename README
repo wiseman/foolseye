@@ -1,3 +1,7 @@
+See
+http://lemonodor.com/archives/2008/02/protecting_journalistic_integrity_algorithmically.html
+for background.
+
 virtualenv env
 env/bin/easy_install Flask
 env/bin/easy_install Flask-Script
