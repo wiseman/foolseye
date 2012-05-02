@@ -1,7 +1,7 @@
 Foolseye
 ========
 
-Foolseye flags new photos that show evidence of digital alteration
+Foolseye flags news photos that show evidence of digital alteration
 (i.e. they've been Photoshopped) and crowdsources the human evaluation
 of suspect images.
 
