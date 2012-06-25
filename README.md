@@ -10,10 +10,7 @@ See ["Protecting Journalistic Integrity Algorithmically"](http://lemonodor.com/a
 Prerequisites
 -------------
 
-    virtualenv env
-    env/bin/easy_install Flask
-    env/bin/easy_install Flask-Script
-    env/bin/easy_install pymongo
-    env/bin/easy_install blinker
     sudo apt-get install mongodb
     sudo apt-get install libfreeimage-dev
+    virtualenv env
+    env/bin/pip install -r requirements.txt

@@ -1,0 +1,5 @@
+pymongo<=1.8.1
+Flask
+Flask-Script
+blinker
+PIL
